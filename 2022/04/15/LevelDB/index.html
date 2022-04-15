@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="首先创建 LevelDB 对象，然后调用 Put 1234567891011leveldb::DB* db; leveldb::Options options;&#x2F;&#x2F; 配置项：如果LevelDB数据库目录不存在，则自动创建options.create_if_missing &#x3D; true;leveldb::Status status &#x3D; leveldb::DB::Open(options, &amp;quot">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LevelDB 源码阅读-Put操作">
+<meta property="og:url" content="http://www.dousir9.top/2022/04/15/LevelDB/index.html">
+<meta property="og:site_name" content="Jinkai Xu">
+<meta property="og:description" content="首先创建 LevelDB 对象，然后调用 Put 1234567891011leveldb::DB* db; leveldb::Options options;&#x2F;&#x2F; 配置项：如果LevelDB数据库目录不存在，则自动创建options.create_if_missing &#x3D; true;leveldb::Status status &#x3D; leveldb::DB::Open(options, &amp;quot">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-04-15T03:24:43.000Z">
+<meta property="article:modified_time" content="2022-04-15T04:23:36.891Z">
+<meta property="article:author" content="Jinkai Xu">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/hello.png">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/hello.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/hello.png">
+        
+      
+    
+    <!-- title -->
+    <title>LevelDB 源码阅读-Put操作</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 5.4.1"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/summary/">Summary</a></li><!--
+     --><!--
+       --><li><a href="/categories/sports/">Sports</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="https://github.com/Dousir9">Github</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2022/04/05/rust-leetcode/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://www.dousir9.top/2022/04/15/LevelDB/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://www.dousir9.top/2022/04/15/LevelDB/&text=LevelDB 源码阅读-Put操作"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://www.dousir9.top/2022/04/15/LevelDB/&title=LevelDB 源码阅读-Put操作"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://www.dousir9.top/2022/04/15/LevelDB/&is_video=false&description=LevelDB 源码阅读-Put操作"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=LevelDB 源码阅读-Put操作&body=Check out this article: http://www.dousir9.top/2022/04/15/LevelDB/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://www.dousir9.top/2022/04/15/LevelDB/&title=LevelDB 源码阅读-Put操作"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://www.dousir9.top/2022/04/15/LevelDB/&title=LevelDB 源码阅读-Put操作"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://www.dousir9.top/2022/04/15/LevelDB/&title=LevelDB 源码阅读-Put操作"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://www.dousir9.top/2022/04/15/LevelDB/&title=LevelDB 源码阅读-Put操作"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://www.dousir9.top/2022/04/15/LevelDB/&name=LevelDB 源码阅读-Put操作&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://www.dousir9.top/2022/04/15/LevelDB/&t=LevelDB 源码阅读-Put操作"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        LevelDB 源码阅读-Put操作
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">Jinkai Xu</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-04-15T03:24:43.000Z" itemprop="datePublished">2022-04-15</time>
+        
+        (Updated: <time datetime="2022-04-15T04:23:36.891Z" itemprop="dateModified">2022-04-15</time>)
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <p>首先创建 <code>LevelDB</code> 对象，然后调用 <code>Put</code></p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">leveldb::DB* db; </span><br><span class="line">leveldb::Options options;</span><br><span class="line"><span class="comment">// 配置项：如果LevelDB数据库目录不存在，则自动创建</span></span><br><span class="line">options.create_if_missing = <span class="literal">true</span>;</span><br><span class="line">leveldb::Status status = leveldb::DB::<span class="built_in">Open</span>(options, <span class="string">&quot;/tmp/testdb&quot;</span>, &amp;db);</span><br><span class="line"><span class="built_in">assert</span>(status.<span class="built_in">ok</span>());</span><br><span class="line">std::string key = <span class="string">&quot;apple&quot;</span>;</span><br><span class="line">std::string value = <span class="string">&quot;Apple&quot;</span>;</span><br><span class="line"><span class="comment">// 将key/value键值对写入LevelDB数据库</span></span><br><span class="line"></span><br><span class="line">leveldb::Status s = db-&gt;<span class="built_in">Put</span>(leveldb::<span class="built_in">WriteOptions</span>(), key, value);</span><br></pre></td></tr></table></figure>
+
+<p><code>leveldb::DB* db</code> 调用 <code>open</code> 后是 <code>DBImpl</code> 类的实例，因此调用 <code>DBImpl</code> 类的 <code>Put</code> 函数，这个函数里面又调用了 <code>DB</code> 类的 Put：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Status <span class="title">DBImpl::Put</span><span class="params">(<span class="type">const</span> WriteOptions&amp; o, <span class="type">const</span> Slice&amp; key, <span class="type">const</span> Slice&amp; val)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> DB::<span class="built_in">Put</span>(o, key, val);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>DB</code> 类的 <code>Put</code> 函数中，用 <code>WriteBatch</code> 表示本次写操作，将 <code>key</code> 和 <code>value</code> 加到里面，然后调用 <code>Write</code> 函数进行写入：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Status <span class="title">DB::Put</span><span class="params">(<span class="type">const</span> WriteOptions&amp; opt, <span class="type">const</span> Slice&amp; key, <span class="type">const</span> Slice&amp; value)</span> </span>&#123;</span><br><span class="line">  WriteBatch batch;</span><br><span class="line">  batch.<span class="built_in">Put</span>(key, value);</span><br><span class="line">  <span class="keyword">return</span> <span class="built_in">Write</span>(opt, &amp;batch);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>Write</code> 函数注释如下 ：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Status <span class="title">DBImpl::Write</span><span class="params">(<span class="type">const</span> WriteOptions&amp; options, WriteBatch* updates)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 构造一个 Writer 对象表示本次 WriteBatch 写操作</span></span><br><span class="line">  <span class="comment">// 用互斥锁初始化 Writer 对象（初始化的时候没有获取锁）</span></span><br><span class="line">  <span class="function">Writer <span class="title">w</span><span class="params">(&amp;mutex_)</span></span>;</span><br><span class="line">  w.batch = updates;</span><br><span class="line">  w.sync = options.sync;</span><br><span class="line">  w.done = <span class="literal">false</span>;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 获取互斥锁（RAII锁）</span></span><br><span class="line">  <span class="function">MutexLock <span class="title">l</span><span class="params">(&amp;mutex_)</span></span>;</span><br><span class="line">  <span class="comment">// 拿到锁后，将 Writer 加入到 deque 中</span></span><br><span class="line">  writers_.<span class="built_in">push_back</span>(&amp;w);</span><br><span class="line">  <span class="comment">// 如果当前 Writer 没有 done 或者不在 deque 的队头，阻塞</span></span><br><span class="line">  <span class="keyword">while</span> (!w.done &amp;&amp; &amp;w != writers_.<span class="built_in">front</span>()) &#123;</span><br><span class="line">    <span class="comment">// 释放锁，等待条件变量的通知后再尝试获取锁</span></span><br><span class="line">    w.cv.<span class="built_in">Wait</span>();</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 本次写操作已由其它线程写入，直接 return</span></span><br><span class="line">  <span class="keyword">if</span> (w.done) &#123;</span><br><span class="line">    <span class="keyword">return</span> w.status;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 此线程的 Writer 已经是队首 writer 了</span></span><br><span class="line">  <span class="comment">// May temporarily unlock and wait.</span></span><br><span class="line">  <span class="comment">// 为写入腾出空间</span></span><br><span class="line">  Status status = <span class="built_in">MakeRoomForWrite</span>(updates == <span class="literal">nullptr</span>);</span><br><span class="line">  <span class="comment">// 获得 version 的最后一个序列号</span></span><br><span class="line">  <span class="type">uint64_t</span> last_sequence = versions_-&gt;<span class="built_in">LastSequence</span>();</span><br><span class="line">  <span class="comment">// </span></span><br><span class="line">  Writer* last_writer = &amp;w;</span><br><span class="line">  <span class="comment">// updates 为 nullptr 是 compaction</span></span><br><span class="line">  <span class="keyword">if</span> (status.<span class="built_in">ok</span>() &amp;&amp; updates != <span class="literal">nullptr</span>) &#123;  <span class="comment">// nullptr batch is for compactions</span></span><br><span class="line">    WriteBatch* write_batch = <span class="built_in">BuildBatchGroup</span>(&amp;last_writer);</span><br><span class="line">    WriteBatchInternal::<span class="built_in">SetSequence</span>(write_batch, last_sequence + <span class="number">1</span>);</span><br><span class="line">    last_sequence += WriteBatchInternal::<span class="built_in">Count</span>(write_batch);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Add to log and apply to memtable.  We can release the lock</span></span><br><span class="line">    <span class="comment">// during this phase since &amp;w is currently responsible for logging</span></span><br><span class="line">    <span class="comment">// and protects against concurrent loggers and concurrent writes</span></span><br><span class="line">    <span class="comment">// into mem_.</span></span><br><span class="line">    &#123;</span><br><span class="line">      mutex_.<span class="built_in">Unlock</span>();</span><br><span class="line">      status = log_-&gt;<span class="built_in">AddRecord</span>(WriteBatchInternal::<span class="built_in">Contents</span>(write_batch));</span><br><span class="line">      <span class="type">bool</span> sync_error = <span class="literal">false</span>;</span><br><span class="line">      <span class="keyword">if</span> (status.<span class="built_in">ok</span>() &amp;&amp; options.sync) &#123;</span><br><span class="line">        status = logfile_-&gt;<span class="built_in">Sync</span>();</span><br><span class="line">        <span class="keyword">if</span> (!status.<span class="built_in">ok</span>()) &#123;</span><br><span class="line">          sync_error = <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">if</span> (status.<span class="built_in">ok</span>()) &#123;</span><br><span class="line">        status = WriteBatchInternal::<span class="built_in">InsertInto</span>(write_batch, mem_);</span><br><span class="line">      &#125;</span><br><span class="line">      mutex_.<span class="built_in">Lock</span>();</span><br><span class="line">      <span class="keyword">if</span> (sync_error) &#123;</span><br><span class="line">        <span class="comment">// The state of the log file is indeterminate: the log record we</span></span><br><span class="line">        <span class="comment">// just added may or may not show up when the DB is re-opened.</span></span><br><span class="line">        <span class="comment">// So we force the DB into a mode where all future writes fail.</span></span><br><span class="line">        <span class="built_in">RecordBackgroundError</span>(status);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (write_batch == tmp_batch_) tmp_batch_-&gt;<span class="built_in">Clear</span>();</span><br><span class="line"></span><br><span class="line">    versions_-&gt;<span class="built_in">SetLastSequence</span>(last_sequence);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">    Writer* ready = writers_.<span class="built_in">front</span>();</span><br><span class="line">    writers_.<span class="built_in">pop_front</span>();</span><br><span class="line">    <span class="keyword">if</span> (ready != &amp;w) &#123;</span><br><span class="line">      ready-&gt;status = status;</span><br><span class="line">      ready-&gt;done = <span class="literal">true</span>;</span><br><span class="line">      ready-&gt;cv.<span class="built_in">Signal</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (ready == last_writer) <span class="keyword">break</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Notify new head of write queue</span></span><br><span class="line">  <span class="keyword">if</span> (!writers_.<span class="built_in">empty</span>()) &#123;</span><br><span class="line">    writers_.<span class="built_in">front</span>()-&gt;cv.<span class="built_in">Signal</span>();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> status;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/categories/summary/">Summary</a></li>
+         
+          <li><a href="/categories/sports/">Sports</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/Dousir9">Github</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://www.dousir9.top/2022/04/15/LevelDB/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://www.dousir9.top/2022/04/15/LevelDB/&text=LevelDB 源码阅读-Put操作"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://www.dousir9.top/2022/04/15/LevelDB/&title=LevelDB 源码阅读-Put操作"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://www.dousir9.top/2022/04/15/LevelDB/&is_video=false&description=LevelDB 源码阅读-Put操作"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=LevelDB 源码阅读-Put操作&body=Check out this article: http://www.dousir9.top/2022/04/15/LevelDB/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://www.dousir9.top/2022/04/15/LevelDB/&title=LevelDB 源码阅读-Put操作"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://www.dousir9.top/2022/04/15/LevelDB/&title=LevelDB 源码阅读-Put操作"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://www.dousir9.top/2022/04/15/LevelDB/&title=LevelDB 源码阅读-Put操作"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://www.dousir9.top/2022/04/15/LevelDB/&title=LevelDB 源码阅读-Put操作"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://www.dousir9.top/2022/04/15/LevelDB/&name=LevelDB 源码阅读-Put操作&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://www.dousir9.top/2022/04/15/LevelDB/&t=LevelDB 源码阅读-Put操作"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2022
+    Jinkai Xu
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/summary/">Summary</a></li><!--
+     --><!--
+       --><li><a href="/categories/sports/">Sports</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="https://github.com/Dousir9">Github</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script> 
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script> 
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
