@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="LevelDB源码阅读： Log Writer1. 日志写什么？为了防止字符串的频繁拷贝，LevelDB 中字符串用 Slice 表示，其中 data_  为字符串的初始地址，size_  为该字符串从初始地址开始的长度。 1234struct Slice &amp;#123;    char *data_;    size_t size_;&amp;#125;; 上面介绍了表示字符串的方法，对于日志来说，我们不">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LevelDB源码阅读:Log Writer">
+<meta property="og:url" content="http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/index.html">
+<meta property="og:site_name" content="Jinkai Xu">
+<meta property="og:description" content="LevelDB源码阅读： Log Writer1. 日志写什么？为了防止字符串的频繁拷贝，LevelDB 中字符串用 Slice 表示，其中 data_  为字符串的初始地址，size_  为该字符串从初始地址开始的长度。 1234struct Slice &amp;#123;    char *data_;    size_t size_;&amp;#125;; 上面介绍了表示字符串的方法，对于日志来说，我们不">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-04-18T10:32:28.000Z">
+<meta property="article:modified_time" content="2022-04-18T12:45:49.620Z">
+<meta property="article:author" content="Jinkai Xu">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/hello.png">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/hello.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/hello.png">
+        
+      
+    
+    <!-- title -->
+    <title>LevelDB源码阅读:Log Writer</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 5.4.1"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/summary/">Summary</a></li><!--
+     --><!--
+       --><li><a href="/categories/sports/">Sports</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="https://github.com/Dousir9">Github</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="Previous post" href="/2022/04/18/LevelDB-Log-Reader/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2022/04/16/life/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&text=LevelDB源码阅读:Log Writer"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&is_video=false&description=LevelDB源码阅读:Log Writer"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=LevelDB源码阅读:Log Writer&body=Check out this article: http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&name=LevelDB源码阅读:Log Writer&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&t=LevelDB源码阅读:Log Writer"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#LevelDB%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB%EF%BC%9A-Log-Writer"><span class="toc-number">1.</span> <span class="toc-text">LevelDB源码阅读： Log Writer</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E6%97%A5%E5%BF%97%E5%86%99%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="toc-number">1.1.</span> <span class="toc-text">1. 日志写什么？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-db-log-writer-h%EF%BC%9A"><span class="toc-number">1.2.</span> <span class="toc-text">2. db&#x2F;log_writer.h：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-db-log-writer-cc%EF%BC%9A"><span class="toc-number">1.3.</span> <span class="toc-text">3. db&#x2F;log_writer.cc：</span></a></li></ol></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        LevelDB源码阅读:Log Writer
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">Jinkai Xu</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-04-18T10:32:28.000Z" itemprop="datePublished">2022-04-18</time>
+        
+        (Updated: <time datetime="2022-04-18T12:45:49.620Z" itemprop="dateModified">2022-04-18</time>)
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <h1 id="LevelDB源码阅读：-Log-Writer"><a href="#LevelDB源码阅读：-Log-Writer" class="headerlink" title="LevelDB源码阅读： Log Writer"></a>LevelDB源码阅读： Log Writer</h1><h2 id="1-日志写什么？"><a href="#1-日志写什么？" class="headerlink" title="1. 日志写什么？"></a>1. 日志写什么？</h2><p>为了防止字符串的频繁拷贝，LevelDB 中字符串用 <code>Slice</code> 表示，其中 <code>data_</code>  为字符串的初始地址，<code>size_</code>  为该字符串从初始地址开始的长度。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Slice</span> &#123;</span><br><span class="line">    <span class="type">char</span> *data_;</span><br><span class="line">    <span class="type">size_t</span> size_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>上面介绍了表示字符串的方法，对于日志来说，我们不能直接把日志的内容写进去，因为写入的日志总归要读取对吧，所以我们需要日志的 format，在 LevelDB 中，日志逻辑上是以 block （32KB）为单位的， 假如我们要写入一个 <code>Slice</code> ，LevelDB 将它包装成一个或者多个（<code>Slice</code> 有时需要分段来分别装在不同的 <code>block</code> 中，这时候 <code>Slice</code> 被分为多个 Record） Record，它的 format 如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 以下非 LevelDB 源码，只是抽象代码</span></span><br><span class="line"><span class="comment">// header 的组成为：checksum (4 bytes), length (2 bytes), type (1 byte)，它的大小为 7 bytes</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">header</span> &#123;</span><br><span class="line">    <span class="type">uint32_t</span> crc_;        <span class="comment">// crc 校验</span></span><br><span class="line">    <span class="type">uint8_t</span> length_low_;  <span class="comment">// Record 长度 length 的低8位</span></span><br><span class="line">    <span class="type">uint8_t</span> length_high_; <span class="comment">// Record 长度 length 的高8位，length_low_ 和 length_high_ 共同组成 length</span></span><br><span class="line">    RecordType type_;        <span class="comment">// Record 的类型</span></span><br><span class="line">&#125;;</span><br><span class="line"><span class="comment">// Record 由 header_ 和 数据组成</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Record</span> &#123;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> header_[<span class="number">7</span>]; <span class="comment">// record header</span></span><br><span class="line">    data_; <span class="comment">// 数据</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>如上面所述，如果当前用于写 Log 的 block 的剩余空间装不下当前要写的 Slice 时，这时候就要将 Slice 分段，这时候一个 Slice 对应多个 Record，header 中的 RecordType 就是用来标记一个 Record 的位置情况的：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">enum</span> <span class="title class_">RecordType</span> &#123;</span><br><span class="line">  <span class="comment">// 0 是为预分配的文件保留的</span></span><br><span class="line">  kZeroType = <span class="number">0</span>,</span><br><span class="line">  <span class="comment">// 这个 Slice 没有分段，只有一个 Record，也就是说这个 Record 完全都在一个 block 中</span></span><br><span class="line">  kFullType = <span class="number">1</span>,</span><br><span class="line">	<span class="comment">// Slice 分段成多个 Record，这些 Record 分布在多个 block 中，下面表示的是 Record 片段在 Slice 的哪个位置</span></span><br><span class="line">  <span class="comment">// 头部</span></span><br><span class="line">  kFirstType = <span class="number">2</span>,</span><br><span class="line">  <span class="comment">// 中间部分</span></span><br><span class="line">  kMiddleType = <span class="number">3</span>,</span><br><span class="line">  <span class="comment">// 尾部</span></span><br><span class="line">  kLastType = <span class="number">4</span></span><br><span class="line">&#125;;</span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="type">int</span> kMaxRecordType = kLastType;</span><br></pre></td></tr></table></figure>
+
+<p>如果当前 block 只剩下 7 个bytes 的空间（刚好装下 Record 的头部）或者剩下 x(0 &lt; x &lt; 7) bytes 的空间时怎么处理呢？</p>
+<ol>
+<li>x == 7：LevelDB 会写入一个 Record，但是这个 Record 只有 header，data 部分大小为 0，Record 的 <code>RecordType</code> 为  <code>kFirstType</code>。</li>
+<li>0 &lt; x &lt; 7：LevelDB 会用 <code>&#39;\0&#39;</code> 填充这个 block 剩下的空间</li>
+</ol>
+<h2 id="2-db-log-writer-h："><a href="#2-db-log-writer-h：" class="headerlink" title="2. db/log_writer.h："></a>2. db/log_writer.h：</h2><p>代码注释如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">namespace</span> leveldb &#123;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 可被顺序写入的文件的抽象（因为不同操作系统的写入方式不同）</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">WritableFile</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> log &#123;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Writer</span> &#123;</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="comment">// 创建一个 writer 向 “*dest” 中添加数据</span></span><br><span class="line">  <span class="comment">// “*dest” 最初必须为空</span></span><br><span class="line">  <span class="comment">// Writer 在使用的时候，&quot;*dest&quot; 必须是 live 的</span></span><br><span class="line">  <span class="function"><span class="keyword">explicit</span> <span class="title">Writer</span><span class="params">(WritableFile* dest)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 除了 “*dest” 的初始长度必须为 &quot;dest_length&quot; 之外其余跟上面一样</span></span><br><span class="line">  <span class="built_in">Writer</span>(WritableFile* dest, <span class="type">uint64_t</span> dest_length);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 删除默认的拷贝构造函数</span></span><br><span class="line">  <span class="built_in">Writer</span>(<span class="type">const</span> Writer&amp;) = <span class="keyword">delete</span>;</span><br><span class="line">  <span class="comment">// 删除默认的 &quot;=&quot; 重载</span></span><br><span class="line">  Writer&amp; <span class="keyword">operator</span>=(<span class="type">const</span> Writer&amp;) = <span class="keyword">delete</span>;</span><br><span class="line"></span><br><span class="line">  ~<span class="built_in">Writer</span>();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 外部接口：写 Record</span></span><br><span class="line">  <span class="function">Status <span class="title">AddRecord</span><span class="params">(<span class="type">const</span> Slice&amp; slice)</span></span>;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="comment">// 内部接口：Emit Record</span></span><br><span class="line">  <span class="function">Status <span class="title">EmitPhysicalRecord</span><span class="params">(RecordType type, <span class="type">const</span> <span class="type">char</span>* ptr, <span class="type">size_t</span> length)</span></span>;</span><br><span class="line"></span><br><span class="line">  WritableFile* dest_; <span class="comment">// 可被顺序写入的文件的抽象（因为不同操作系统的写入方式不同）</span></span><br><span class="line">  <span class="type">int</span> block_offset_;  <span class="comment">// 当前 block 的偏移量，block_offset_ 之前的空间已经被写入了</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// 用于存放预计算的 crc 中各种 RecordType 的 crc，减少开销</span></span><br><span class="line">  <span class="type">uint32_t</span> type_crc_[kMaxRecordType + <span class="number">1</span>];</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">&#125;  <span class="comment">// namespace log</span></span><br><span class="line">&#125;  <span class="comment">// namespace leveldb</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="3-db-log-writer-cc："><a href="#3-db-log-writer-cc：" class="headerlink" title="3. db/log_writer.cc："></a>3. db/log_writer.cc：</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">namespace</span> leveldb &#123;</span><br><span class="line"><span class="keyword">namespace</span> log &#123;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 预计算 crc 中各种 RecordType 的 crc，减少开销</span></span><br><span class="line"><span class="function"><span class="type">static</span> <span class="type">void</span> <span class="title">InitTypeCrc</span><span class="params">(<span class="type">uint32_t</span>* type_crc)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt;= kMaxRecordType; i++) &#123;</span><br><span class="line">    <span class="type">char</span> t = <span class="built_in">static_cast</span>&lt;<span class="type">char</span>&gt;(i);</span><br><span class="line">    type_crc[i] = crc32c::<span class="built_in">Value</span>(&amp;t, <span class="number">1</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 构造函数</span></span><br><span class="line">Writer::<span class="built_in">Writer</span>(WritableFile* dest) : <span class="built_in">dest_</span>(dest), <span class="built_in">block_offset_</span>(<span class="number">0</span>) &#123;</span><br><span class="line">  <span class="built_in">InitTypeCrc</span>(type_crc_);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 构造函数</span></span><br><span class="line">Writer::<span class="built_in">Writer</span>(WritableFile* dest, <span class="type">uint64_t</span> dest_length)</span><br><span class="line">    : <span class="built_in">dest_</span>(dest), <span class="built_in">block_offset_</span>(dest_length % kBlockSize) &#123;</span><br><span class="line">  <span class="built_in">InitTypeCrc</span>(type_crc_);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 默认析构函数</span></span><br><span class="line">Writer::~<span class="built_in">Writer</span>() = <span class="keyword">default</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 外部接口：写 Record</span></span><br><span class="line"><span class="function">Status <span class="title">Writer::AddRecord</span><span class="params">(<span class="type">const</span> Slice&amp; slice)</span> </span>&#123;</span><br><span class="line">  <span class="type">const</span> <span class="type">char</span>* ptr = slice.<span class="built_in">data</span>();</span><br><span class="line">  <span class="type">size_t</span> left = slice.<span class="built_in">size</span>();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Fragment the record if necessary and emit it.  Note that if slice</span></span><br><span class="line">  <span class="comment">// is empty, we still want to iterate once to emit a single</span></span><br><span class="line">  <span class="comment">// zero-length record</span></span><br><span class="line">  <span class="comment">// 如果有必要，就将 Record 分段并 emit，注意如果 Slice 是空的，那么也会发送一个长度为 0 的 Record</span></span><br><span class="line">  Status s;</span><br><span class="line">  <span class="type">bool</span> begin = <span class="literal">true</span>;</span><br><span class="line">  <span class="keyword">do</span> &#123;</span><br><span class="line">    <span class="comment">// 求剩下还有多少空间</span></span><br><span class="line">    <span class="type">const</span> <span class="type">int</span> leftover = kBlockSize - block_offset_;</span><br><span class="line">    <span class="built_in">assert</span>(leftover &gt;= <span class="number">0</span>);</span><br><span class="line">    <span class="comment">// 如果剩下的空间不够 7 byte，则写入 &#x27;\0&#x27; 来填充尾部</span></span><br><span class="line">    <span class="comment">// 然后将 block_offset_ 重置为 0 表示重新切换到一个新的块</span></span><br><span class="line">    <span class="keyword">if</span> (leftover &lt; kHeaderSize) &#123;</span><br><span class="line">      <span class="keyword">if</span> (leftover &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">static_assert</span>(kHeaderSize == <span class="number">7</span>, <span class="string">&quot;&quot;</span>);</span><br><span class="line">        dest_-&gt;<span class="built_in">Append</span>(<span class="built_in">Slice</span>(<span class="string">&quot;\x00\x00\x00\x00\x00\x00&quot;</span>, leftover));</span><br><span class="line">      &#125;</span><br><span class="line">      block_offset_ = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Invariant: we never leave &lt; kHeaderSize bytes in a block.</span></span><br><span class="line">    <span class="built_in">assert</span>(kBlockSize - block_offset_ - kHeaderSize &gt;= <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 计算当前块中的可用空间</span></span><br><span class="line">    <span class="type">const</span> <span class="type">size_t</span> avail = kBlockSize - block_offset_ - kHeaderSize;</span><br><span class="line">    <span class="comment">// 计算当前 record 的长度，可能存在将 Slice 分段</span></span><br><span class="line">    <span class="type">const</span> <span class="type">size_t</span> fragment_length = (left &lt; avail) ? left : avail;</span><br><span class="line"></span><br><span class="line">    RecordType type;</span><br><span class="line">    <span class="type">const</span> <span class="type">bool</span> end = (left == fragment_length);</span><br><span class="line">    <span class="keyword">if</span> (begin &amp;&amp; end) &#123;</span><br><span class="line">      type = kFullType;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (begin) &#123;</span><br><span class="line">      type = kFirstType;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (end) &#123;</span><br><span class="line">      type = kLastType;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      type = kMiddleType;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// emit 当前 record</span></span><br><span class="line">    s = <span class="built_in">EmitPhysicalRecord</span>(type, ptr, fragment_length);</span><br><span class="line">    <span class="comment">// 移动指针，准备写下一个 record</span></span><br><span class="line">    ptr += fragment_length;</span><br><span class="line">    <span class="comment">// 剩下要写的数据减少</span></span><br><span class="line">    left -= fragment_length;</span><br><span class="line">    begin = <span class="literal">false</span>;</span><br><span class="line">  &#125; <span class="keyword">while</span> (s.<span class="built_in">ok</span>() &amp;&amp; left &gt; <span class="number">0</span>);</span><br><span class="line">  <span class="keyword">return</span> s;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 内部接口：Emit Record</span></span><br><span class="line"><span class="function">Status <span class="title">Writer::EmitPhysicalRecord</span><span class="params">(RecordType t, <span class="type">const</span> <span class="type">char</span>* ptr,</span></span></span><br><span class="line"><span class="params"><span class="function">                                  <span class="type">size_t</span> length)</span> </span>&#123;</span><br><span class="line">  <span class="built_in">assert</span>(length &lt;= <span class="number">0xffff</span>);  <span class="comment">// Must fit in two bytes</span></span><br><span class="line">  <span class="built_in">assert</span>(block_offset_ + kHeaderSize + length &lt;= kBlockSize);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Format the header</span></span><br><span class="line">  <span class="type">char</span> buf[kHeaderSize];</span><br><span class="line">  <span class="comment">// buf 前 4 位存放校验和</span></span><br><span class="line">  <span class="comment">// LevelDB 使用的是小端字节序存储，低位字节排放在内存的低地址端</span></span><br><span class="line">  <span class="comment">// 写入 length 的低 8 位，</span></span><br><span class="line">  buf[<span class="number">4</span>] = <span class="built_in">static_cast</span>&lt;<span class="type">char</span>&gt;(length &amp; <span class="number">0xff</span>);</span><br><span class="line">  <span class="comment">// 写入 length 的高 8 位，</span></span><br><span class="line">  buf[<span class="number">5</span>] = <span class="built_in">static_cast</span>&lt;<span class="type">char</span>&gt;(length &gt;&gt; <span class="number">8</span>);</span><br><span class="line">  <span class="comment">// 写入 type</span></span><br><span class="line">  buf[<span class="number">6</span>] = <span class="built_in">static_cast</span>&lt;<span class="type">char</span>&gt;(t);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 计算 record type 和数据区 的 crc</span></span><br><span class="line">  <span class="type">uint32_t</span> crc = crc32c::<span class="built_in">Extend</span>(type_crc_[t], ptr, length);</span><br><span class="line">  crc = crc32c::<span class="built_in">Mask</span>(crc);  <span class="comment">// Adjust for storage</span></span><br><span class="line">  <span class="comment">// 将 crc 放入 buf 前 4 位</span></span><br><span class="line">  <span class="built_in">EncodeFixed32</span>(buf, crc);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 真正将 Record（header + data）写入磁盘</span></span><br><span class="line">  <span class="comment">// 写 header</span></span><br><span class="line">  Status s = dest_-&gt;<span class="built_in">Append</span>(<span class="built_in">Slice</span>(buf, kHeaderSize));</span><br><span class="line">  <span class="keyword">if</span> (s.<span class="built_in">ok</span>()) &#123;</span><br><span class="line">    <span class="comment">// 写 data</span></span><br><span class="line">    s = dest_-&gt;<span class="built_in">Append</span>(<span class="built_in">Slice</span>(ptr, length));</span><br><span class="line">    <span class="comment">// 每写完一个 record 后就 flush 刷盘</span></span><br><span class="line">    <span class="keyword">if</span> (s.<span class="built_in">ok</span>()) &#123;</span><br><span class="line">      s = dest_-&gt;<span class="built_in">Flush</span>();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// block 的写入位置向后移</span></span><br><span class="line">  block_offset_ += kHeaderSize + length;</span><br><span class="line">  <span class="keyword">return</span> s;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#125;  <span class="comment">// namespace log</span></span><br><span class="line">&#125;  <span class="comment">// namespace leveldb</span></span><br></pre></td></tr></table></figure>
+
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/categories/summary/">Summary</a></li>
+         
+          <li><a href="/categories/sports/">Sports</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/Dousir9">Github</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#LevelDB%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB%EF%BC%9A-Log-Writer"><span class="toc-number">1.</span> <span class="toc-text">LevelDB源码阅读： Log Writer</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E6%97%A5%E5%BF%97%E5%86%99%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="toc-number">1.1.</span> <span class="toc-text">1. 日志写什么？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-db-log-writer-h%EF%BC%9A"><span class="toc-number">1.2.</span> <span class="toc-text">2. db&#x2F;log_writer.h：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-db-log-writer-cc%EF%BC%9A"><span class="toc-number">1.3.</span> <span class="toc-text">3. db&#x2F;log_writer.cc：</span></a></li></ol></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&text=LevelDB源码阅读:Log Writer"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&is_video=false&description=LevelDB源码阅读:Log Writer"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=LevelDB源码阅读:Log Writer&body=Check out this article: http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&name=LevelDB源码阅读:Log Writer&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&t=LevelDB源码阅读:Log Writer"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2022
+    Jinkai Xu
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/summary/">Summary</a></li><!--
+     --><!--
+       --><li><a href="/categories/sports/">Sports</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="https://github.com/Dousir9">Github</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script> 
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script> 
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
