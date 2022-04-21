@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="LevelDB源码阅读： ArenaArena 是用来管理内存的数据结构，在 memtable 和 skiplist 中使用。 Arana.h123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263namespace le">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LevelDB-Arena">
+<meta property="og:url" content="http://www.dousir9.top/2022/04/21/LevelDB-Arena/index.html">
+<meta property="og:site_name" content="Jinkai Xu">
+<meta property="og:description" content="LevelDB源码阅读： ArenaArena 是用来管理内存的数据结构，在 memtable 和 skiplist 中使用。 Arana.h123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263namespace le">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-04-21T12:56:58.000Z">
+<meta property="article:modified_time" content="2022-04-21T13:32:07.564Z">
+<meta property="article:author" content="Jinkai Xu">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/hello.png">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/hello.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/hello.png">
+        
+      
+    
+    <!-- title -->
+    <title>LevelDB-Arena</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 5.4.1"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/summary/">Summary</a></li><!--
+     --><!--
+       --><li><a href="/categories/sports/">Sports</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="https://github.com/Dousir9">Github</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2022/04/18/LevelDB-Log-Reader/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://www.dousir9.top/2022/04/21/LevelDB-Arena/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&text=LevelDB-Arena"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&title=LevelDB-Arena"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&is_video=false&description=LevelDB-Arena"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=LevelDB-Arena&body=Check out this article: http://www.dousir9.top/2022/04/21/LevelDB-Arena/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&title=LevelDB-Arena"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&title=LevelDB-Arena"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&title=LevelDB-Arena"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&title=LevelDB-Arena"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&name=LevelDB-Arena&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&t=LevelDB-Arena"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#LevelDB%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB%EF%BC%9A-Arena"><span class="toc-number">1.</span> <span class="toc-text">LevelDB源码阅读： Arena</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Arana-h"><span class="toc-number">1.1.</span> <span class="toc-text">Arana.h</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Arana-cc"><span class="toc-number">1.2.</span> <span class="toc-text">Arana.cc</span></a></li></ol></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        LevelDB-Arena
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">Jinkai Xu</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-04-21T12:56:58.000Z" itemprop="datePublished">2022-04-21</time>
+        
+        (Updated: <time datetime="2022-04-21T13:32:07.564Z" itemprop="dateModified">2022-04-21</time>)
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <h1 id="LevelDB源码阅读：-Arena"><a href="#LevelDB源码阅读：-Arena" class="headerlink" title="LevelDB源码阅读： Arena"></a>LevelDB源码阅读： Arena</h1><p>Arena 是用来管理内存的数据结构，在 memtable 和 skiplist 中使用。</p>
+<h2 id="Arana-h"><a href="#Arana-h" class="headerlink" title="Arana.h"></a>Arana.h</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">namespace</span> leveldb &#123;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Arena</span> &#123;</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="built_in">Arena</span>();</span><br><span class="line"></span><br><span class="line">  <span class="built_in">Arena</span>(<span class="type">const</span> Arena&amp;) = <span class="keyword">delete</span>;</span><br><span class="line">  Arena&amp; <span class="keyword">operator</span>=(<span class="type">const</span> Arena&amp;) = <span class="keyword">delete</span>;</span><br><span class="line"></span><br><span class="line">  ~<span class="built_in">Arena</span>();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 外部接口：返回一个指向新分配 bytes 字节的内存块的指针。</span></span><br><span class="line">  <span class="function"><span class="type">char</span>* <span class="title">Allocate</span><span class="params">(<span class="type">size_t</span> bytes)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 外部接口：返回一个指向新分配 bytes 字节的 对齐的 内存块的指针</span></span><br><span class="line">  <span class="function"><span class="type">char</span>* <span class="title">AllocateAligned</span><span class="params">(<span class="type">size_t</span> bytes)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 外部接口：返回 Arena 中总共内存使用的估计值（估计值是因为存在碎片，真正使用的低于分配的）</span></span><br><span class="line">  <span class="function"><span class="type">size_t</span> <span class="title">MemoryUsage</span><span class="params">()</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> memory_usage_.<span class="built_in">load</span>(std::memory_order_relaxed);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="comment">// 内部接口：通过调用处进行理解</span></span><br><span class="line">  <span class="function"><span class="type">char</span>* <span class="title">AllocateFallback</span><span class="params">(<span class="type">size_t</span> bytes)</span></span>;</span><br><span class="line">  <span class="comment">// 内部接口：通过调用处进行理解</span></span><br><span class="line">  <span class="function"><span class="type">char</span>* <span class="title">AllocateNewBlock</span><span class="params">(<span class="type">size_t</span> block_bytes)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 当前申请的内存块的指针</span></span><br><span class="line">  <span class="type">char</span>* alloc_ptr_;</span><br><span class="line">  <span class="comment">// 当前申请的内存块，剩余的 bytes 数</span></span><br><span class="line">  <span class="type">size_t</span> alloc_bytes_remaining_;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 记录所有通过 new[] 分配的内存块的指针</span></span><br><span class="line">  std::vector&lt;<span class="type">char</span>*&gt; blocks_;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// TODO(costan): This member is accessed via atomics, but the others are</span></span><br><span class="line">  <span class="comment">//               accessed without any locking. Is this OK?</span></span><br><span class="line">  <span class="comment">// Arena 总共申请的内存(Byte)</span></span><br><span class="line">  std::atomic&lt;<span class="type">size_t</span>&gt; memory_usage_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 外部接口：</span></span><br><span class="line"><span class="comment">// 返回一个指向新分配 bytes 字节的内存块的指针。</span></span><br><span class="line"><span class="function"><span class="keyword">inline</span> <span class="type">char</span>* <span class="title">Arena::Allocate</span><span class="params">(<span class="type">size_t</span> bytes)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 只允许分配大于 0 的内存空间 </span></span><br><span class="line">  <span class="built_in">assert</span>(bytes &gt; <span class="number">0</span>);</span><br><span class="line">  <span class="comment">// 如果当前块剩下的空间还够分配 bytes 字节的空间，那就用当前这块</span></span><br><span class="line">  <span class="keyword">if</span> (bytes &lt;= alloc_bytes_remaining_) &#123;</span><br><span class="line">    <span class="comment">// 获取当前块的偏移指针</span></span><br><span class="line">    <span class="type">char</span>* result = alloc_ptr_;</span><br><span class="line">    <span class="comment">// 移动指针</span></span><br><span class="line">    alloc_ptr_ += bytes;</span><br><span class="line">    <span class="comment">// 更新余下的 bytes 数</span></span><br><span class="line">    alloc_bytes_remaining_ -= bytes;</span><br><span class="line">    <span class="comment">// 返回内存块</span></span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 找一个新的内存块</span></span><br><span class="line">  <span class="keyword">return</span> <span class="built_in">AllocateFallback</span>(bytes);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#125;  <span class="comment">// namespace leveldb</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="Arana-cc"><a href="#Arana-cc" class="headerlink" title="Arana.cc"></a>Arana.cc</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">namespace</span> leveldb &#123;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 块大小</span></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="type">int</span> kBlockSize = <span class="number">4096</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 构造函数</span></span><br><span class="line">Arena::<span class="built_in">Arena</span>()</span><br><span class="line">    : <span class="built_in">alloc_ptr_</span>(<span class="literal">nullptr</span>), <span class="built_in">alloc_bytes_remaining_</span>(<span class="number">0</span>), <span class="built_in">memory_usage_</span>(<span class="number">0</span>) &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 析构时才释放内存</span></span><br><span class="line">Arena::~<span class="built_in">Arena</span>() &#123;</span><br><span class="line">  <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; blocks_.<span class="built_in">size</span>(); i++) &#123;</span><br><span class="line">    <span class="keyword">delete</span>[] blocks_[i];</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 内部接口：通过调用处进行理解</span></span><br><span class="line"><span class="function"><span class="type">char</span>* <span class="title">Arena::AllocateFallback</span><span class="params">(<span class="type">size_t</span> bytes)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 如果当前需要的内存大于 1/4 个块，直接分配一块刚好的内存</span></span><br><span class="line">  <span class="comment">// 避免当前内存块中的剩余内存被浪费太多（这种情况是：如果当前内存块剩余内存大于 1/4，但是低于需要，</span></span><br><span class="line">  <span class="comment">// 如果此时新分配一块内存，那么最少 1/4 个块的内存就会被浪费掉）</span></span><br><span class="line">  <span class="keyword">if</span> (bytes &gt; kBlockSize / <span class="number">4</span>) &#123;</span><br><span class="line">    <span class="type">char</span>* result = <span class="built_in">AllocateNewBlock</span>(bytes);</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 我们浪费了当前块的剩余空间，不过最多浪费 1/4</span></span><br><span class="line">  <span class="comment">// 分配一个新的标准块（大小为 kBlockSize）</span></span><br><span class="line">  alloc_ptr_ = <span class="built_in">AllocateNewBlock</span>(kBlockSize);</span><br><span class="line">  <span class="comment">// 更新当前块的剩余空间</span></span><br><span class="line">  alloc_bytes_remaining_ = kBlockSize;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 从这个新块里面扣一个内存出来</span></span><br><span class="line">  <span class="type">char</span>* result = alloc_ptr_;</span><br><span class="line">  alloc_ptr_ += bytes;</span><br><span class="line">  alloc_bytes_remaining_ -= bytes;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 外部接口：返回一个指向新分配 bytes 字节的 对齐的 内存块的指针</span></span><br><span class="line"><span class="function"><span class="type">char</span>* <span class="title">Arena::AllocateAligned</span><span class="params">(<span class="type">size_t</span> bytes)</span> </span>&#123;</span><br><span class="line">  <span class="type">const</span> <span class="type">int</span> align = (<span class="built_in">sizeof</span>(<span class="type">void</span>*) &gt; <span class="number">8</span>) ? <span class="built_in">sizeof</span>(<span class="type">void</span>*) : <span class="number">8</span>;</span><br><span class="line">  <span class="comment">// 确保指针大小是 2 的指数次方</span></span><br><span class="line">  <span class="built_in">static_assert</span>((align &amp; (align - <span class="number">1</span>)) == <span class="number">0</span>,</span><br><span class="line">                <span class="string">&quot;Pointer size should be a power of 2&quot;</span>);</span><br><span class="line">  <span class="comment">// 取得当前地址未对齐的尾数</span></span><br><span class="line">  <span class="comment">// 比如，要对齐的要求是 8 bytes</span></span><br><span class="line">  <span class="comment">// 但是当前指针指向的是 0x017 这里</span></span><br><span class="line">  <span class="comment">// 那么余下的 current_mod 就是 1</span></span><br><span class="line">  <span class="type">size_t</span> current_mod = <span class="built_in">reinterpret_cast</span>&lt;<span class="type">uintptr_t</span>&gt;(alloc_ptr_) &amp; (align - <span class="number">1</span>);</span><br><span class="line">  <span class="comment">// 如果 current_mod 是 1，那么补上 7 就对齐了</span></span><br><span class="line">  <span class="type">size_t</span> slop = (current_mod == <span class="number">0</span> ? <span class="number">0</span> : align - current_mod);</span><br><span class="line">  <span class="comment">// bytes + slop 是总共需要申请的内存</span></span><br><span class="line">  <span class="type">size_t</span> needed = bytes + slop;</span><br><span class="line">  <span class="type">char</span>* result;</span><br><span class="line">  <span class="comment">// 这里的逻辑就与 Allocate 完全一样的了，除了会移动一下 slop 以外</span></span><br><span class="line">  <span class="keyword">if</span> (needed &lt;= alloc_bytes_remaining_) &#123;</span><br><span class="line">    result = alloc_ptr_ + slop;</span><br><span class="line">    alloc_ptr_ += needed;</span><br><span class="line">    alloc_bytes_remaining_ -= needed;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    AllocateFallback 总是返回对齐的内存</span><br><span class="line">    result = <span class="built_in">AllocateFallback</span>(bytes);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 这里断言一下，返回地址 result 肯定是 align 对齐的。</span></span><br><span class="line">  <span class="built_in">assert</span>((<span class="built_in">reinterpret_cast</span>&lt;<span class="type">uintptr_t</span>&gt;(result) &amp; (align - <span class="number">1</span>)) == <span class="number">0</span>);</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 内部接口：通过调用处进行理解</span></span><br><span class="line"><span class="function"><span class="type">char</span>* <span class="title">Arena::AllocateNewBlock</span><span class="params">(<span class="type">size_t</span> block_bytes)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// new 一个新块</span></span><br><span class="line">  <span class="type">char</span>* result = <span class="keyword">new</span> <span class="type">char</span>[block_bytes];</span><br><span class="line">  <span class="comment">// 把这个块放到 vector 中记录着，析构的时候一起释放</span></span><br><span class="line">  blocks_.<span class="built_in">push_back</span>(result);</span><br><span class="line">  <span class="comment">// 记录占用的内存增加了</span></span><br><span class="line">  <span class="comment">// 原子操作：add，std::memory_order_relaxed 表示不对执行顺序做保证，只保证此操作是原子的</span></span><br><span class="line">  memory_usage_.<span class="built_in">fetch_add</span>(block_bytes + <span class="built_in">sizeof</span>(<span class="type">char</span>*),</span><br><span class="line">                          std::memory_order_relaxed);</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#125;  <span class="comment">// namespace leveldb</span></span><br></pre></td></tr></table></figure>
+
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a href="/categories/summary/">Summary</a></li>
+         
+          <li><a href="/categories/sports/">Sports</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/Dousir9">Github</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#LevelDB%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB%EF%BC%9A-Arena"><span class="toc-number">1.</span> <span class="toc-text">LevelDB源码阅读： Arena</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Arana-h"><span class="toc-number">1.1.</span> <span class="toc-text">Arana.h</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Arana-cc"><span class="toc-number">1.2.</span> <span class="toc-text">Arana.cc</span></a></li></ol></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://www.dousir9.top/2022/04/21/LevelDB-Arena/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&text=LevelDB-Arena"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&title=LevelDB-Arena"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&is_video=false&description=LevelDB-Arena"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=LevelDB-Arena&body=Check out this article: http://www.dousir9.top/2022/04/21/LevelDB-Arena/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&title=LevelDB-Arena"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&title=LevelDB-Arena"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&title=LevelDB-Arena"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&title=LevelDB-Arena"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&name=LevelDB-Arena&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://www.dousir9.top/2022/04/21/LevelDB-Arena/&t=LevelDB-Arena"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2021-2022
+    Jinkai Xu
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/summary/">Summary</a></li><!--
+     --><!--
+       --><li><a href="/categories/sports/">Sports</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="https://github.com/Dousir9">Github</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script> 
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script> 
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
