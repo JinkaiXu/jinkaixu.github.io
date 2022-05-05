@@ -8,13 +8,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
     <meta name="description" content="LevelDB源码阅读： Log Writer1. 日志写什么？为了防止字符串的频繁拷贝，LevelDB 中字符串用 Slice 表示，其中 data_  为字符串的初始地址，size_  为该字符串从初始地址开始的长度。 1234struct Slice &amp;#123;    char *data_;    size_t size_;&amp;#125;; 上面介绍了表示字符串的方法，对于日志来说，我们不">
 <meta property="og:type" content="article">
-<meta property="og:title" content="LevelDB源码阅读:Log Writer">
+<meta property="og:title" content="LevelDB-Log Writer">
 <meta property="og:url" content="http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/index.html">
 <meta property="og:site_name" content="Jinkai Xu">
 <meta property="og:description" content="LevelDB源码阅读： Log Writer1. 日志写什么？为了防止字符串的频繁拷贝，LevelDB 中字符串用 Slice 表示，其中 data_  为字符串的初始地址，size_  为该字符串从初始地址开始的长度。 1234struct Slice &amp;#123;    char *data_;    size_t size_;&amp;#125;; 上面介绍了表示字符串的方法，对于日志来说，我们不">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2022-04-18T10:32:28.000Z">
-<meta property="article:modified_time" content="2022-04-18T12:45:49.620Z">
+<meta property="article:modified_time" content="2022-05-05T13:28:14.695Z">
 <meta property="article:author" content="Jinkai Xu">
 <meta name="twitter:card" content="summary">
     
@@ -36,7 +36,7 @@
       
     
     <!-- title -->
-    <title>LevelDB源码阅读:Log Writer</title>
+    <title>LevelDB-Log Writer</title>
     <!-- styles -->
     
 <link rel="stylesheet" href="/css/style.css">
@@ -95,16 +95,16 @@
     <div id="share" style="display: none">
       <ul>
   <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&text=LevelDB源码阅读:Log Writer"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&is_video=false&description=LevelDB源码阅读:Log Writer"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
-  <li><a class="icon" href="mailto:?subject=LevelDB源码阅读:Log Writer&body=Check out this article: http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&name=LevelDB源码阅读:Log Writer&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&t=LevelDB源码阅读:Log Writer"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&text=LevelDB-Log Writer"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB-Log Writer"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&is_video=false&description=LevelDB-Log Writer"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=LevelDB-Log Writer&body=Check out this article: http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB-Log Writer"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB-Log Writer"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB-Log Writer"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB-Log Writer"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&name=LevelDB-Log Writer&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&t=LevelDB-Log Writer"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
 </ul>
 
     </div>
@@ -121,7 +121,7 @@
   <header>
     
     <h1 class="posttitle" itemprop="name headline">
-        LevelDB源码阅读:Log Writer
+        LevelDB-Log Writer
     </h1>
 
 
@@ -135,13 +135,18 @@
       
         <time datetime="2022-04-18T10:32:28.000Z" itemprop="datePublished">2022-04-18</time>
         
-        (Updated: <time datetime="2022-04-18T12:45:49.620Z" itemprop="dateModified">2022-04-18</time>)
+        (Updated: <time datetime="2022-05-05T13:28:14.695Z" itemprop="dateModified">2022-05-05</time>)
         
       
     </div>
 
 
       
+    <div class="article-category">
+        <i class="fas fa-archive"></i>
+        <a class="category-link" href="/categories/LevelDB/">LevelDB</a>
+    </div>
+
 
       
 
@@ -203,16 +208,16 @@
     <div id="share-footer" style="display: none">
       <ul>
   <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&text=LevelDB源码阅读:Log Writer"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&is_video=false&description=LevelDB源码阅读:Log Writer"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" href="mailto:?subject=LevelDB源码阅读:Log Writer&body=Check out this article: http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB源码阅读:Log Writer"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&name=LevelDB源码阅读:Log Writer&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&t=LevelDB源码阅读:Log Writer"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&text=LevelDB-Log Writer"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB-Log Writer"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&is_video=false&description=LevelDB-Log Writer"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=LevelDB-Log Writer&body=Check out this article: http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB-Log Writer"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB-Log Writer"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB-Log Writer"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&title=LevelDB-Log Writer"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&name=LevelDB-Log Writer&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://www.dousir9.top/2022/04/18/LevelDB-Log-Writer/&t=LevelDB-Log Writer"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
 </ul>
 
     </div>
