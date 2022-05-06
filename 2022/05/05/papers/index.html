@@ -14,7 +14,7 @@
 <meta property="og:description" content="A Survey on Advancing the DBMS Query Optimizer: Cardinality Estimation, Cost Model, and Plan Enumeration2021由于不准确的基数预估、代价模型的错误和巨大的计划空间，查询优化器不能为一个复杂的查询在合理的时间内找到最优的执行计划。这篇文章首先介绍了上述问题产生的原因，接着又 review 了为提">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2022-05-05T00:54:38.000Z">
-<meta property="article:modified_time" content="2022-05-05T08:05:32.362Z">
+<meta property="article:modified_time" content="2022-05-06T07:12:25.795Z">
 <meta property="article:author" content="Jinkai Xu">
 <meta name="twitter:card" content="summary">
     
@@ -109,7 +109,7 @@
 
     </div>
     <div id="toc">
-      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#A-Survey-on-Advancing-the-DBMS-Query-Optimizer-Cardinality-Estimation-Cost-Model-and-Plan-Enumeration"><span class="toc-number">1.</span> <span class="toc-text">A Survey on Advancing the DBMS Query Optimizer: Cardinality Estimation, Cost Model, and Plan Enumeration</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2021"><span class="toc-number">1.0.1.</span> <span class="toc-text">2021</span></a></li></ol></li></ol></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#A-Survey-on-Advancing-the-DBMS-Query-Optimizer-Cardinality-Estimation-Cost-Model-and-Plan-Enumeration"><span class="toc-number">1.</span> <span class="toc-text">A Survey on Advancing the DBMS Query Optimizer: Cardinality Estimation, Cost Model, and Plan Enumeration</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2021"><span class="toc-number">1.0.1.</span> <span class="toc-text">2021</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E5%99%A8%E7%9A%84%E4%B8%89%E5%A4%A7%E5%85%B3%E9%94%AE%E7%BB%84%E4%BB%B6%E4%BB%8D%E7%84%B6%E4%B8%8D%E5%87%86%E7%A1%AE"><span class="toc-number">1.1.</span> <span class="toc-text">为什么查询优化器的三大关键组件仍然不准确</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E5%9F%BA%E6%95%B0%E9%A2%84%E4%BC%B0"><span class="toc-number">1.2.</span> <span class="toc-text">3. 基数预估</span></a></li></ol></li></ol>
     </div>
   </span>
 </div>
@@ -135,7 +135,7 @@
       
         <time datetime="2022-05-05T00:54:38.000Z" itemprop="datePublished">2022-05-05</time>
         
-        (Updated: <time datetime="2022-05-05T08:05:32.362Z" itemprop="dateModified">2022-05-05</time>)
+        (Updated: <time datetime="2022-05-06T07:12:25.795Z" itemprop="dateModified">2022-05-06</time>)
         
       
     </div>
@@ -158,13 +158,26 @@
 <p>（3）review 了在提升代价模型方面的工作，将它们分类为三组：改进现有模型、cost model 的代替方案、对一个简单查询的性能预测。</p>
 <p>（4）review 了在计划枚举中使用的技术并且 study 了处理大量查询的非学习的方法。还 review 了最近被提出的方法：采用强化学习来选择 join order。</p>
 <p>（5）分别提供了他们在以上各个方面未来方向的见解。</p>
-<p><strong>基数预估：</strong></p>
+<h2 id="为什么查询优化器的三大关键组件仍然不准确"><a href="#为什么查询优化器的三大关键组件仍然不准确" class="headerlink" title="为什么查询优化器的三大关键组件仍然不准确"></a>为什么查询优化器的三大关键组件仍然不准确</h2><p><strong>基数预估：</strong></p>
 <p>（1）Error in single table with predications：DBMS  通常采用直方图来近似代表数据的分布，但是直方图的数据时小于原始数据的，并且直方图中也有一些假设：单个属性是均匀的，多个属性之间是独立的，一旦假设失效，就会导致错误。对于表中相关的属性，又提出了 Multi-histograms 来处理，但是这又会受到表大小的制约。</p>
 <p>（2）Error in multi-join queries：如果相关性存在于不同的表中，就没有有效的方法去获取两个或多个表之间的概要。join operator 的基数是采用 inclusion principle 通过它的孩子来计算的。如果假设有误就会产生很大的错误。除此之外，对于几个复杂查询，基数预估错误会从叶子结点传播到根节点，目前商用和开源的 DBMS 在多表连接基数预估时仍然很困难。</p>
 <p>（3）Error in user defined function：大多数 DBMS 支持 user-defined function(UDF)，当 UDF 存在于 condition 时，没有通用的方法来估计有多少 tuples 满足它。</p>
 <p><strong>代价模型：</strong></p>
 <p>影响的因素有：硬件、operator 的实现、operator 要处理的 tuple 的数量、当前数据库的状态（buffer 中的数据、并发的查询）、基数预估的准确性。如果是部署在分布式或并行的数据库，云环境或者跨平台的查询引擎，cost model 的复杂性会急剧增加，而且，即使基数预估是正确的，对一个查询的代价估计随着运行时间不是线性的，这可能会导致一个次优的查询计划。</p>
 <p><strong>计划枚举：</strong></p>
+<p>计划枚举有三个限制因素：（1）基数预估和代价模型的错误；（2）搜索空间中剪枝的策略；（3）当查询设计大量表时，优化器必须牺牲最优计划并且采用启发式算法来让优化时间变得合理。</p>
+<p><strong>总结：</strong></p>
+<p>基数预估的误差会传播到代价模型并且导致次优的 join order，消除或降低基数预估的误差是构造好的优化器的第一步。</p>
+<h2 id="3-基数预估"><a href="#3-基数预估" class="headerlink" title="3. 基数预估"></a>3. 基数预估</h2><p><strong>3.1 基于概要的方法 Synopsis-based Methods</strong>：</p>
+<p><strong>Histogram</strong>：</p>
+<p>统计直方图方面有三种工作：（1）快速构建；（2）新的 partition 方法提高准确度；（3）基于查询反馈的直方图构建</p>
+<p>方法：VODP -&gt; AHistL（降低复杂度） -&gt; GDY（基于 local search 的贪心算法，生成好的 sample boundaries 来在 VODP 中产生最优的 partition）-&gt; GDY 的变体对比于 AHistL 在处理”效率-质量“的 trade-off 上更有优势 -&gt; 采用在数据集上随机采样的方法而不是扫描整个数据集 -&gt; 受到采样的启发，提出 merging 算法。</p>
+<p><strong>Sketch</strong>：</p>
+<p>Sketch 将列建模为向量或矩阵，以计算值上元组的不同计数或频率（例如：Count Min）。用不同的 sketches 来估计 join size，这个工作是不考虑 filter 的，基本的 idea 是：（1）在 join attribute 建立 sketch 并且忽略其他所有属性；（2）根据 vector 或者 matrices 相乘估计 join size。这个方法只支持等值连接和单个column的连接。在 sketch 中引入一个 filter 的可能方法是构建一个假想表，这个表仅包含满足 filter 的元组的连接值。</p>
+<p><strong>Other Techniques</strong>：</p>
+<p>TuG 是一个基于图的概要，TuG 的 node 表示同一个表的 tuple 的集合或者同一个 attribute 的 value 的集合，边表示不同表或 attribute 之间的 join 关系。但是构建速度太慢，无法在大型 dataset 中使用。</p>
+<p><strong>3.2 基于采样的方法 Sampling-based Methods</strong>：</p>
+<p>synopsis-based 的方法相当难以捕获不同表之间的相关性。一些人尝试从表中采样，然后将查询在样本上运行来进行基数预估，只要获得的样本的数据分布接近原始数据，那么基数预估就是可信的。</p>
 
   </div>
 </article>
@@ -194,7 +207,7 @@
     </div>
 
     <div id="toc-footer" style="display: none">
-      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#A-Survey-on-Advancing-the-DBMS-Query-Optimizer-Cardinality-Estimation-Cost-Model-and-Plan-Enumeration"><span class="toc-number">1.</span> <span class="toc-text">A Survey on Advancing the DBMS Query Optimizer: Cardinality Estimation, Cost Model, and Plan Enumeration</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2021"><span class="toc-number">1.0.1.</span> <span class="toc-text">2021</span></a></li></ol></li></ol></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#A-Survey-on-Advancing-the-DBMS-Query-Optimizer-Cardinality-Estimation-Cost-Model-and-Plan-Enumeration"><span class="toc-number">1.</span> <span class="toc-text">A Survey on Advancing the DBMS Query Optimizer: Cardinality Estimation, Cost Model, and Plan Enumeration</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2021"><span class="toc-number">1.0.1.</span> <span class="toc-text">2021</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E5%99%A8%E7%9A%84%E4%B8%89%E5%A4%A7%E5%85%B3%E9%94%AE%E7%BB%84%E4%BB%B6%E4%BB%8D%E7%84%B6%E4%B8%8D%E5%87%86%E7%A1%AE"><span class="toc-number">1.1.</span> <span class="toc-text">为什么查询优化器的三大关键组件仍然不准确</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E5%9F%BA%E6%95%B0%E9%A2%84%E4%BC%B0"><span class="toc-number">1.2.</span> <span class="toc-text">3. 基数预估</span></a></li></ol></li></ol>
     </div>
 
     <div id="share-footer" style="display: none">
