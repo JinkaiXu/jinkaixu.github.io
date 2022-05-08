@@ -14,7 +14,7 @@
 <meta property="og:description" content="A Survey on Advancing the DBMS Query Optimizer: Cardinality Estimation, Cost Model, and Plan Enumeration2021由于不准确的基数预估、代价模型的错误和巨大的计划空间，查询优化器不能为一个复杂的查询在合理的时间内找到最优的执行计划。这篇文章首先介绍了上述问题产生的原因，接着又 review 了为提">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2022-05-05T00:54:38.000Z">
-<meta property="article:modified_time" content="2022-05-06T07:12:25.795Z">
+<meta property="article:modified_time" content="2022-05-08T02:16:10.515Z">
 <meta property="article:author" content="Jinkai Xu">
 <meta name="twitter:card" content="summary">
     
@@ -109,7 +109,7 @@
 
     </div>
     <div id="toc">
-      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#A-Survey-on-Advancing-the-DBMS-Query-Optimizer-Cardinality-Estimation-Cost-Model-and-Plan-Enumeration"><span class="toc-number">1.</span> <span class="toc-text">A Survey on Advancing the DBMS Query Optimizer: Cardinality Estimation, Cost Model, and Plan Enumeration</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2021"><span class="toc-number">1.0.1.</span> <span class="toc-text">2021</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E5%99%A8%E7%9A%84%E4%B8%89%E5%A4%A7%E5%85%B3%E9%94%AE%E7%BB%84%E4%BB%B6%E4%BB%8D%E7%84%B6%E4%B8%8D%E5%87%86%E7%A1%AE"><span class="toc-number">1.1.</span> <span class="toc-text">为什么查询优化器的三大关键组件仍然不准确</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E5%9F%BA%E6%95%B0%E9%A2%84%E4%BC%B0"><span class="toc-number">1.2.</span> <span class="toc-text">3. 基数预估</span></a></li></ol></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#A-Survey-on-Advancing-the-DBMS-Query-Optimizer-Cardinality-Estimation-Cost-Model-and-Plan-Enumeration"><span class="toc-number">1.</span> <span class="toc-text">A Survey on Advancing the DBMS Query Optimizer: Cardinality Estimation, Cost Model, and Plan Enumeration</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2021"><span class="toc-number">1.0.1.</span> <span class="toc-text">2021</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E5%99%A8%E7%9A%84%E4%B8%89%E5%A4%A7%E5%85%B3%E9%94%AE%E7%BB%84%E4%BB%B6%E4%BB%8D%E7%84%B6%E4%B8%8D%E5%87%86%E7%A1%AE"><span class="toc-number">1.1.</span> <span class="toc-text">为什么查询优化器的三大关键组件仍然不准确</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E5%9F%BA%E6%95%B0%E9%A2%84%E4%BC%B0"><span class="toc-number">1.2.</span> <span class="toc-text">3. 基数预估</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-%E4%BB%A3%E4%BB%B7%E6%A8%A1%E5%9E%8B"><span class="toc-number">1.3.</span> <span class="toc-text">4. 代价模型</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-%E8%AE%A1%E5%88%92%E6%9E%9A%E4%B8%BE"><span class="toc-number">1.3.1.</span> <span class="toc-text">5. 计划枚举</span></a></li></ol></li></ol></li></ol>
     </div>
   </span>
 </div>
@@ -135,7 +135,7 @@
       
         <time datetime="2022-05-05T00:54:38.000Z" itemprop="datePublished">2022-05-05</time>
         
-        (Updated: <time datetime="2022-05-06T07:12:25.795Z" itemprop="dateModified">2022-05-06</time>)
+        (Updated: <time datetime="2022-05-08T02:16:10.515Z" itemprop="dateModified">2022-05-08</time>)
         
       
     </div>
@@ -178,7 +178,15 @@
 <p>TuG 是一个基于图的概要，TuG 的 node 表示同一个表的 tuple 的集合或者同一个 attribute 的 value 的集合，边表示不同表或 attribute 之间的 join 关系。但是构建速度太慢，无法在大型 dataset 中使用。</p>
 <p><strong>3.2 基于采样的方法 Sampling-based Methods</strong>：</p>
 <p>synopsis-based 的方法相当难以捕获不同表之间的相关性。一些人尝试从表中采样，然后将查询在样本上运行来进行基数预估，只要获得的样本的数据分布接近原始数据，那么基数预估就是可信的。</p>
-
+<p><strong>3.3 基于学习的方法 Learning-based Methods</strong>：</p>
+<p>采用基于学习的方法来捕获数据的分布的相关性。</p>
+<h2 id="4-代价模型"><a href="#4-代价模型" class="headerlink" title="4. 代价模型"></a>4. 代价模型</h2><p>三个研究方向：</p>
+<p><strong>4.1 提高现有代价模型的质量</strong></p>
+<p><strong>4.2 代价模型替换</strong></p>
+<p>由于代价模型是一个从计划到代价的函数映射，因此大多数方法采用学习的模型来替代原始的模型。</p>
+<p><strong>4.3 查询性能预测</strong></p>
+<p>一次查询的性能主要是指延迟。</p>
+<h3 id="5-计划枚举"><a href="#5-计划枚举" class="headerlink" title="5. 计划枚举"></a>5. 计划枚举</h3>
   </div>
 </article>
 
@@ -207,7 +215,7 @@
     </div>
 
     <div id="toc-footer" style="display: none">
-      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#A-Survey-on-Advancing-the-DBMS-Query-Optimizer-Cardinality-Estimation-Cost-Model-and-Plan-Enumeration"><span class="toc-number">1.</span> <span class="toc-text">A Survey on Advancing the DBMS Query Optimizer: Cardinality Estimation, Cost Model, and Plan Enumeration</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2021"><span class="toc-number">1.0.1.</span> <span class="toc-text">2021</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E5%99%A8%E7%9A%84%E4%B8%89%E5%A4%A7%E5%85%B3%E9%94%AE%E7%BB%84%E4%BB%B6%E4%BB%8D%E7%84%B6%E4%B8%8D%E5%87%86%E7%A1%AE"><span class="toc-number">1.1.</span> <span class="toc-text">为什么查询优化器的三大关键组件仍然不准确</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E5%9F%BA%E6%95%B0%E9%A2%84%E4%BC%B0"><span class="toc-number">1.2.</span> <span class="toc-text">3. 基数预估</span></a></li></ol></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#A-Survey-on-Advancing-the-DBMS-Query-Optimizer-Cardinality-Estimation-Cost-Model-and-Plan-Enumeration"><span class="toc-number">1.</span> <span class="toc-text">A Survey on Advancing the DBMS Query Optimizer: Cardinality Estimation, Cost Model, and Plan Enumeration</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2021"><span class="toc-number">1.0.1.</span> <span class="toc-text">2021</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E5%99%A8%E7%9A%84%E4%B8%89%E5%A4%A7%E5%85%B3%E9%94%AE%E7%BB%84%E4%BB%B6%E4%BB%8D%E7%84%B6%E4%B8%8D%E5%87%86%E7%A1%AE"><span class="toc-number">1.1.</span> <span class="toc-text">为什么查询优化器的三大关键组件仍然不准确</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E5%9F%BA%E6%95%B0%E9%A2%84%E4%BC%B0"><span class="toc-number">1.2.</span> <span class="toc-text">3. 基数预估</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-%E4%BB%A3%E4%BB%B7%E6%A8%A1%E5%9E%8B"><span class="toc-number">1.3.</span> <span class="toc-text">4. 代价模型</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-%E8%AE%A1%E5%88%92%E6%9E%9A%E4%B8%BE"><span class="toc-number">1.3.1.</span> <span class="toc-text">5. 计划枚举</span></a></li></ol></li></ol></li></ol>
     </div>
 
     <div id="share-footer" style="display: none">
