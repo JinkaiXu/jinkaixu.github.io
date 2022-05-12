@@ -14,7 +14,7 @@
 <meta property="og:description" content="A Survey on Advancing the DBMS Query Optimizer: Cardinality Estimation, Cost Model, and Plan Enumeration2021由于不准确的基数预估、代价模型的错误和巨大的计划空间，查询优化器不能为一个复杂的查询在合理的时间内找到最优的执行计划。这篇文章首先介绍了上述问题产生的原因，接着又 review 了为提">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2022-05-05T00:54:38.000Z">
-<meta property="article:modified_time" content="2022-05-11T02:26:09.549Z">
+<meta property="article:modified_time" content="2022-05-12T09:33:10.707Z">
 <meta property="article:author" content="Jinkai Xu">
 <meta name="twitter:card" content="summary">
     
@@ -135,7 +135,7 @@
       
         <time datetime="2022-05-05T00:54:38.000Z" itemprop="datePublished">2022-05-05</time>
         
-        (Updated: <time datetime="2022-05-11T02:26:09.549Z" itemprop="dateModified">2022-05-11</time>)
+        (Updated: <time datetime="2022-05-12T09:33:10.707Z" itemprop="dateModified">2022-05-12</time>)
         
       
     </div>
@@ -197,6 +197,12 @@
 <li><p>认为广泛使用的 Q-Error 无法区分不同子计划查询的重要性，因此无法无法真实反映基数预估方法生成的查询计划质量，于是提出了一个新的 metric P-Error 去评估基数预估方法的性能，它克服了 Q-Error 的限制，能够反映基数预估方法的整体端到端性能。</p>
 </li>
 </ol>
+<p>Background：</p>
+<p>开源数据库的基数预估主要由两种：histogram ：PG、SQL Server，sampling：MySQL、MariaDB。基数预估的核心工作是构建一个压缩的 model 来捕获 data 或 query 的信息。基于学习的方法可以被分为两类：data-driven 和 query-driven，query-driven 的方法构建有辨别力的方法来将有特点的 query 映射到它们的基数；data-driven 的方法直接对所有属性的 joint distribution 进行建模。与传统方法相比，他们的估计准确性更加突出因为它们更加复杂和细粒度的。</p>
+<p>Motivation：</p>
+<p>尽管基数预估方法取得了最新进展，但忽视了一个基础问题，这些先进的基数预估方法在真实世界的设定中能多大程度提高查询优化器的性能？尽管现有的研究已经进行了广泛的实验，他们有以下缺点：</p>
+<p>（1）用于评估的数据和查询负载可能不能很好的反映真实世界的场景。</p>
+<p>（2）大多数评估没有展示基数预估方法在查询优化器上的端到端的提升。</p>
 
   </div>
 </article>
