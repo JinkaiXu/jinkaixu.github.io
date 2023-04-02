@@ -4,6 +4,32 @@
   
   
   <entry>
+    <title>Web3 基本知识</title>
+    <link href="/2023/04/02/web3%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5/"/>
+    <url>/2023/04/02/web3%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5/</url>
+    
+    <content type="html"><![CDATA[<h2 id="Web3-基础概念："><a href="#Web3-基础概念：" class="headerlink" title="Web3 基础概念："></a>Web3 基础概念：</h2><table><thead><tr><th>基础概念</th><th>概念解析</th></tr></thead><tbody><tr><td>Web3</td><td>一个基于区块链的互联网新形态的构想，包含了去中心化和基于代币的经济学的概念。</td></tr><tr><td>Blockchain</td><td>区块链，一种去中心化、无法篡改的信息记录系统，是加密货币、NFT 等概念的底层技术。</td></tr><tr><td>Bitcoin</td><td>比特币，世界上第一个被广泛应用的加密货币。</td></tr><tr><td>Ethereum</td><td>以太坊，是一种区块链，支撑着 dAPP 的发展；衍生出加密货币 Ether（以太）。</td></tr><tr><td>Crypto</td><td>又称 Cryptocurrency，加密货币，一种去中心化的数字货币。</td></tr><tr><td>dAPP</td><td>Decentralized App，指运行在区块链而非服务器上的应用。</td></tr><tr><td>NFT</td><td>Non-Fungible Token，一种在链上被记录的、有所有权的数字资产。</td></tr><tr><td>DAO</td><td>Decentralized Autonomous Organization，去中心化的自治组织。</td></tr><tr><td>Metaverse</td><td>元宇宙，一种由科技手段创造的虚拟世界的构想。</td></tr><tr><td>DeFi</td><td>Decentralized Finance，去中心化金融系统。</td></tr><tr><td>Token</td><td>代币，可以理解为加密货币、NFT 等数字资产的统称。</td></tr><tr><td>GameFi</td><td>Game + DeFi，中文说法链游，游戏中的金融系统可通过加密货币和 NFT 映射到现实。</td></tr></tbody></table><h2 id="常见平台介绍："><a href="#常见平台介绍：" class="headerlink" title="常见平台介绍："></a>常见平台介绍：</h2><table><thead><tr><th>平台</th><th>平台介绍</th></tr></thead><tbody><tr><td>Discord</td><td>原为游戏社群工具，后出圈成为 Web3 社群普遍使用的交流工具。</td></tr><tr><td>Telegram</td><td>另一个 Web3 社群常用的交流工具。</td></tr><tr><td>OpenSea</td><td>常用的 NFT 交易平台。</td></tr><tr><td>Metamask</td><td>常用的数字货币钱包。</td></tr><tr><td>Coinbase</td><td>常用的数字货币交易所。</td></tr><tr><td>a16z</td><td>硅谷知名 VC，近年来因投了很多 Crypto &#x2F; Web3 项目，积累了较大影响力。</td></tr><tr><td>CryptoPunks</td><td>NFT 代表项目之一，特点是像素画风。</td></tr><tr><td>BAYC</td><td>NFT 代表项目之一，全称 Bored Ape Yacht Club，特点是猿猴。</td></tr><tr><td>Axie Infinity</td><td>GameFi 代表之一，衍生出虚拟货币 AXS。</td></tr><tr><td>CryptoKitties</td><td>GameFi 代表之一，也是最早尝试将区块链技术应用于娱乐休闲的尝试之一。</td></tr></tbody></table><h2 id="用户行为："><a href="#用户行为：" class="headerlink" title="用户行为："></a>用户行为：</h2><table><thead><tr><th>行为</th><th>行为定义</th></tr></thead><tbody><tr><td>挖矿</td><td>指生成加密货币和验证新交易的过程</td></tr><tr><td>私钥</td><td>保护数字资产的密码</td></tr><tr><td>Mint（铸造）</td><td>指数字艺术品上链成为 NFT 的过程</td></tr><tr><td>白名单 &#x2F; WL</td><td>指能提前 &#x2F; 以折扣价购买 NFT 的机会，一般被 NFT 项目方用来运营社群</td></tr><tr><td>空投</td><td>指加密货币 &#x2F; 代币 &#x2F; NFT 等的免费发放</td></tr><tr><td>Roadmap</td><td>路线图，项目方用于描述项目计划。跟常规意义相同</td></tr><tr><td>Gas fee</td><td>交易手续费，支付给矿工（帮你在链上完成交易的人）</td></tr></tbody></table>]]></content>
+    
+    
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>博客搭建报告</title>
+    <link href="/2023/04/02/%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E6%8A%A5%E5%91%8A/"/>
+    <url>/2023/04/02/%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E6%8A%A5%E5%91%8A/</url>
+    
+    <content type="html"><![CDATA[<h2 id="博客主题及其选取原因"><a href="#博客主题及其选取原因" class="headerlink" title="博客主题及其选取原因"></a>博客主题及其选取原因</h2><p>选择的是 hexo 的 fluid 主题，主要原因是该主题比较好看也十分直观，具备一些博客应有的基本功能。</p><h2 id="博客功能实现及其技术选择"><a href="#博客功能实现及其技术选择" class="headerlink" title="博客功能实现及其技术选择"></a>博客功能实现及其技术选择</h2><p>该博客主要思路是运用 <code>Github Pages</code> + <code>Hexo</code> 来实现的，使用 Markdown 写的 md 文件，然后 hexo 生成 html，直接提交到 GitHub 上就可以生成博客了。</p><h4 id="具体步骤如下："><a href="#具体步骤如下：" class="headerlink" title="具体步骤如下："></a>具体步骤如下：</h4><ol><li><p>安装<code>Git</code>, <code>hexo</code>部署到<code>github</code>时要用。网上随便找一个安装教程</p></li><li><p>安装<code>NodeJS</code>, <code>Hexo</code>是基于<code>NodeJS</code>编写的，所以需要安装<code>NodeJS</code>和<code>npm</code>工具</p></li><li><p>在<code>GitHub</code>上创建一个新的代码仓库用于保存我们的网页，其中 <code>repository name</code>格式为</p><figure class="highlight jboss-cli"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs jboss-cli">用户名<span class="hljs-string">.github.io</span><br></code></pre></td></tr></table></figure></li><li><p>安装<code>Hexo</code>, 并通过一些简单的指令代码在本地启动<code>server</code>.随后可以通过访问 <a href="http://localhost:4000来验浏览本地页面。">http://localhost:4000来验浏览本地页面。</a></p></li><li><p>挑选主题，我选择的是Fluid</p></li><li><p>发布到<code>Github pages</code>，可以先安装<code>hexo-deployer-git</code>，然后修改根目录下的<code>config</code>信息，配置好对应的<code>github</code> 相关信息，如下所示：</p><figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs yml"><span class="hljs-attr">deploy:</span><br>  <span class="hljs-attr">type:</span> <span class="hljs-string">git</span><br>  <span class="hljs-attr">repo:</span> <span class="hljs-string">git@github.com:JinkaiXu/jinkaixu.github.io.git</span><br>  <span class="hljs-attr">branch:</span> <span class="hljs-string">main</span><br></code></pre></td></tr></table></figure></li></ol><h2 id="博客制作过程中遇到的问题及其解决方法"><a href="#博客制作过程中遇到的问题及其解决方法" class="headerlink" title="博客制作过程中遇到的问题及其解决方法"></a>博客制作过程中遇到的问题及其解决方法</h2><p>上传 github 后我的 github.io 无法访问，查了一下是因为暂时还没部署好，等一会儿就好了。</p><h2 id="本次搭建博客的心得"><a href="#本次搭建博客的心得" class="headerlink" title="本次搭建博客的心得"></a>本次搭建博客的心得</h2><p>此次作业让我加深了对github、git、hexo等各项工具及技术的使用，下面是我的一些总结和反思：学习成本：使用 GitHub Pages 和 Hexo 需要一定的学习成本，特别是对于那些没有使用过 Git 和 HTML 编辑器的人来说。不过，一旦掌握了这些工具的基本使用方法，就可以快速创建和发布博客。自定义程度:GitHub Pages 和 Hexo 都提供了许多自定义选项，用户可以自定义网站的样式、主题和插件等。但是，GitHub Pages 的自定义程度更高，可以很好地与 Git 工具集成，而 Hexo 的自定义程度更高，需要用户自己编写 HTML 和 CSS 代码。安全性：使用 GitHub Pages 和 Hexo 搭建博客都需要用户注意网站的安全性，特别是对于那些使用免费域名的人来说。需要定期更新和备份网站数据，并使用安全的密码和访问权限等。博客内容：无论使用哪种工具搭建博客，都需要重视博客内容的质量和价值。只有为用户提供有用的信息和资源，才能获得用户的认可和支持。同时，还需要注重博客内容的更新和发布频率，以保持博客的活力和影响力。</p>]]></content>
+    
+    
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>我的第一篇博客文章</title>
     <link href="/2023/04/02/%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E5%8D%9A%E5%AE%A2%E6%96%87%E7%AB%A0/"/>
     <url>/2023/04/02/%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E5%8D%9A%E5%AE%A2%E6%96%87%E7%AB%A0/</url>
